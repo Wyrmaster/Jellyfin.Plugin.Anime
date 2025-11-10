@@ -24,8 +24,4 @@
     <EmbeddedResource Include="Configuration\config.html" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy /y &quot;$(TargetDir)*&quot; &quot;$(LocalAppData)\jellyfin\plugins\Anime Provider\&quot;" />
-  </Target>
-
 </Project>
