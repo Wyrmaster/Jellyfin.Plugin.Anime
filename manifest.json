@@ -1,0 +1,11 @@
+﻿[
+  {
+    "category": "Metadata",
+    "guid": "597c0d6e-2e91-402d-be34-54b67c4a5da2",
+    "name": "Anime Provider",
+    "description": "MetaData provider for Anime series and movies from AniList and MyAnimeList",
+    "owner": "Stephen Pichler",
+    "overview": "Anime Metadata Provider",
+    "versions": []
+  }
+]
