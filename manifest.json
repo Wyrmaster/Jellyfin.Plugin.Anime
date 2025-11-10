@@ -6,6 +6,15 @@
     "description": "MetaData provider for Anime series and movies from AniList and MyAnimeList",
     "owner": "Stephen Pichler",
     "overview": "Anime Metadata Provider",
-    "versions": []
+    "versions": [
+      {
+        "checksum": "3dbffa34079177ddc1e0c1414d055eb9",
+        "changelog": "initial version",
+        "sourceUrl": "https://github.com/Wyrmaster/Jellyfin.Plugin.Anime/releases/download/v1.0.0/Jellyfin.Plugin.Anime.v1.0.0.zip",
+        "targetAbi": "10.10.7",
+        "timestamp": "2025-11-10T07:56:57Z",
+        "version": "1.0.0"
+      }
+    ]
   }
 ]
