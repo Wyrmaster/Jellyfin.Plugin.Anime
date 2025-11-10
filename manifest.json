@@ -8,6 +8,13 @@
     "overview": "Anime Metadata Provider",
     "versions": [
       {
+        "checksum": "34a3efb145e7a8c84032db14ca8601f7",
+        "sourceUrl": "https://github.com/Wyrmaster/Jellyfin.Plugin.Anime/releases/download/v1.0.1/Jellyfin.Plugin.Anime.v1.0.1.zip",
+        "targetAbi": "10.10.7",
+        "timestamp": "2025-11-10T17:59:29Z",
+        "version": "1.0.1"
+      },
+      {
         "checksum": "3dbffa34079177ddc1e0c1414d055eb9",
         "changelog": "initial version",
         "sourceUrl": "https://github.com/Wyrmaster/Jellyfin.Plugin.Anime/releases/download/v1.0.0/Jellyfin.Plugin.Anime.v1.0.0.zip",
