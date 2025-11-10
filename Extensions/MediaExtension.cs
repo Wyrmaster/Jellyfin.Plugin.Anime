@@ -23,12 +23,12 @@ public static  class MediaExtension
   public static TVideo ToVideo<TVideo>(this Media anime) where TVideo : Video, new() =>
     new()
     {
-      Name = anime.Title.English,
-      OriginalTitle = anime.Title.Romaji,
+      Name = anime.Title.Romaji,
+      OriginalTitle = anime.Title.English,
       Overview = anime.Description,
       ProductionYear = anime.StartDate.Year,
       PremiereDate = new DateTime(anime.StartDate.Year ?? 1970, anime.StartDate.Month ?? 1, anime.StartDate.Day ?? 1, 0, 0, 0),
-      EndDate = new DateTime(anime.EndDate.Year ?? 1970, anime.EndDate.Month ?? 1, anime.EndDate.Day ?? 1, 0, 0, 0),
+      EndDate = anime.EndDate?.Year == null || anime.EndDate?.Month == null || anime.EndDate?.Day == null ? null : new DateTime(anime.EndDate.Year ?? 1970, anime.EndDate.Month ?? 1, anime.EndDate.Day ?? 1, 0, 0, 0),
       CommunityRating = (float) (anime.MeanScore ?? anime.AverageScore ?? 0.0d),
       RunTimeTicks = TimeSpan.FromMinutes(anime.Duration ?? 0).Ticks,
       Genres = anime.Genres.ToArray(),
@@ -45,12 +45,12 @@ public static  class MediaExtension
   public static TItem ToFolder<TItem>(this Media anime) where TItem : Folder, new() =>
     new()
     {
-      Name = anime.Title.English,
-      OriginalTitle = anime.Title.Romaji,
+      Name = anime.Title.Romaji,
+      OriginalTitle = anime.Title.English,
       Overview = anime.Description,
       ProductionYear = anime.StartDate.Year,
       PremiereDate = new DateTime(anime.StartDate.Year ?? 1970, anime.StartDate.Month ?? 1, anime.StartDate.Day ?? 1, 0, 0, 0),
-      EndDate = new DateTime(anime.EndDate.Year ?? 1970, anime.EndDate.Month ?? 1, anime.EndDate.Day ?? 1, 0, 0, 0),
+      EndDate = anime.EndDate?.Year == null || anime.EndDate?.Month == null || anime.EndDate?.Day == null ? null : new DateTime(anime.EndDate.Year ?? 1970, anime.EndDate.Month ?? 1, anime.EndDate.Day ?? 1, 0, 0, 0),
       CommunityRating = (float) (anime.MeanScore ?? anime.AverageScore ?? 0.0d),
       RunTimeTicks = TimeSpan.FromMinutes(anime.Duration ?? 0).Ticks,
       Genres = anime.Genres.ToArray(),

@@ -14,7 +14,7 @@ public class MalEpisodeProvider: AbstractAnimeProvider<Episode, EpisodeInfo>
 {
   #region Fields
 
-  private static readonly Regex DetectEpisodeNumber = new(@"-\s(S\d+E(\d+)|E(\d+)|(\d+))", RegexOptions.Compiled);
+  private static readonly Regex DetectEpisodeNumber = new(@"\d+", RegexOptions.Compiled);
 
   #endregion
   
@@ -38,14 +38,8 @@ public class MalEpisodeProvider: AbstractAnimeProvider<Episode, EpisodeInfo>
       return result;
     }
 
-    Match match = DetectEpisodeNumber.Match(Path.GetFileNameWithoutExtension(info.Path));
-    if (match.Success && int.TryParse(match.Groups[2].Success
-          ? match.Groups[2].Value
-          : match.Groups[3].Success
-            ? match.Groups[3].Value
-            : match.Groups[4].Success
-              ? match.Groups[4].Value
-              : "0", out int idx))
+    Match? match = DetectEpisodeNumber.Matches(Path.GetFileNameWithoutExtension(info.Path)).LastOrDefault(entry => entry.Success);
+    if (match != null && int.TryParse(match.Value, out int idx))
     {
       long? malId;
       if (info.SeasonProviderIds.TryGetValue(ProviderNames.MalProvider, out string? malIdString)
@@ -68,7 +62,7 @@ public class MalEpisodeProvider: AbstractAnimeProvider<Episode, EpisodeInfo>
       result.Item.Name = episode?.Title ?? string.Empty;
       // season number can be set to 1 as animes don't really have seasons in that sense.
       // so for the mal implementation every season has its own id
-      result.Item.ParentIndexNumber = 1;
+      result.Item.ParentIndexNumber = info.ParentIndexNumber;
       result.Item.OriginalTitle = episode?.TitleRomanji ?? string.Empty;
       result.Item.Overview = episode?.Synopsis ?? string.Empty;
       
