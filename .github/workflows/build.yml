@@ -1,0 +1,96 @@
+name: Build Anime Plugin
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v3
+        with:
+          path: masterRepo
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore masterRepo/Jellyfin.Plugin.Anime.csproj
+
+      # extract the version and abi from the manifest
+      - name: Extract Version and ABI from csproj
+        id: extract_version_abi
+        run: |
+          VERSION=$(grep -oPm1 "(?<=<Version>)(.*)(?=</Version>)" masterRepo/Jellyfin.Plugin.Anime.csproj)
+          TARGET_ABI=$(grep -oPm1 "(?<=<PackageReference Include=\"Jellyfin.Controller\" Version=\")(.*)(?=\")" masterRepo/Jellyfin.Plugin.Anime.csproj)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "TARGET_ABI=${TARGET_ABI}" >> $GITHUB_ENV
+
+      - name: Build
+        run: dotnet build --configuration Release masterRepo/Jellyfin.Plugin.Anime.csproj
+
+      - name: Publish
+        run: dotnet publish --configuration Release -o output masterRepo/Jellyfin.Plugin.Anime.csproj
+
+      - name: Zip plugin
+        run: |
+          cd output
+          zip -r ../Jellyfin.Plugin.Anime.v${{ env.VERSION }}.zip \
+            ./GraphQL.Client.Abstractions.dll \
+            ./GraphQL.Client.Abstractions.Websocket.dll \
+            ./GraphQL.Client.dll \
+            ./GraphQL.Client.Serializer.SystemTextJson.dll \
+            ./GraphQL.Primitives.dll \
+            ./Jellyfin.Plugin.Anime.dll \
+            ./JikanDotNet.dll \
+            ./System.Linq.Async.dll \
+            ./System.Reactive.dll
+
+      # generate the hash for the manifest
+      - name: Generate MD5 Checksum for ZIP
+        id: checksum
+        run: |
+          CHECKSUM=$(md5sum Jellyfin.Plugin.Anime.v${{ env.VERSION }}.zip | awk '{ print $1 }')
+          echo "CHECKSUM=${CHECKSUM}" >> $GITHUB_ENV
+
+      - name: Update Manifest File
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          jq --arg version "${{ env.VERSION }}" \
+             --arg checksum "${{ env.CHECKSUM }}" \
+             --arg sourceUrl "https://github.com/Wyrmaster/Jellyfin.Plugin.Anime/releases/download/v${{ env.VERSION }}/Jellyfin.Plugin.Anime.v${{ env.VERSION }}.zip" \
+             --arg targetAbi "${{ env.TARGET_ABI }}" \
+             --arg timestamp "$TIMESTAMP" \
+             '.[0].versions = [{
+                checksum: $checksum,
+                sourceUrl: $sourceUrl,
+                targetAbi: $targetAbi,
+                timestamp: $timestamp,
+                version: $version
+              }] + .[0].versions' masterRepo/manifest.json > masterRepo/manifest-updated.json
+
+          mv masterRepo/manifest-updated.json masterRepo/manifest.json
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            Jellyfin.Plugin.Anime.v${{ env.VERSION }}.zip
+             masterRepo/manifest.json
+        
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
