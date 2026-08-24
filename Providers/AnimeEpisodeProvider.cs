@@ -51,10 +51,11 @@ public class MalEpisodeProvider(IHttpClientFactory httpClientFactory, ILogger<Ab
 
       try
       {
-        AnimeEpisode? episode = await (JikanProvider.Instance?.GetAnimeEpisodeAsync(malId, idx, cancellationToken) ?? Task.FromResult<AnimeEpisode?>(null));
-        result.Item.Name = episode?.Title ?? string.Empty;
-        result.Item.OriginalTitle = episode?.TitleRomanji ?? string.Empty;
-        result.Item.Overview = episode?.Synopsis ?? string.Empty;
+        // todo find a way to make this work somehow this is causing trouble
+        // AnimeEpisode? episode = await (JikanProvider.Instance?.GetAnimeEpisodeAsync(malId, idx, cancellationToken) ?? Task.FromResult<AnimeEpisode?>(null));
+        // result.Item.Name = episode?.Title ?? string.Empty;
+        // result.Item.OriginalTitle = episode?.TitleRomanji ?? string.Empty;
+        // result.Item.Overview = episode?.Synopsis ?? string.Empty;
       }
       catch
       {

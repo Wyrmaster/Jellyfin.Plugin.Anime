@@ -63,6 +63,7 @@ public abstract class AbstractBaseAnimeProvider<TItemType, TLookupInfoType>
   {
     try
     {
+      this.Logger?.LogInformation($"Loading Metadata for {Path.GetFileName(path)}");
       if (this.TryReadAniListIdFromFile(path) is not { } id)
       {
         Medium? medium = await AniListProvider
