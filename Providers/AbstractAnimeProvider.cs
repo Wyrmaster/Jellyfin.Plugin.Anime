@@ -8,19 +8,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.Anime.Providers;
 
-public abstract class AbstractAnimeProvider<TItemType, TLookupInfoType>
-  : AbstractBaseAnimeProvider<TItemType, TLookupInfoType>
+public abstract class AbstractAnimeProvider<TItemType, TLookupInfoType>(
+  IHttpClientFactory httpClientFactory,
+  ILogger<AbstractBaseAnimeProvider<TItemType, TLookupInfoType>>? logger = null)
+  : AbstractBaseAnimeProvider<TItemType, TLookupInfoType>(httpClientFactory, logger)
   where TItemType : Video, IHasLookupInfo<TLookupInfoType>, new()
   where TLookupInfoType : ItemLookupInfo, new()
 {
-  #region Constructor
-
-  protected AbstractAnimeProvider(IHttpClientFactory httpClientFactory, ILogger<AbstractBaseAnimeProvider<TItemType, TLookupInfoType>>? logger = null) : base(httpClientFactory, logger)
-  {
-  }
-
-  #endregion
-
   #region Overrides
 
   /// <inheritdoc/>

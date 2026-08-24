@@ -10,19 +10,11 @@ namespace Jellyfin.Plugin.Anime.Providers;
 /// <summary>
 ///   Provider to resolve Anime Episodes from MyAnimeList
 /// </summary>
-public class MalEpisodeProvider: AbstractAnimeProvider<Episode, EpisodeInfo>
+public class MalEpisodeProvider(IHttpClientFactory httpClientFactory, ILogger<AbstractAnimeProvider<Episode, EpisodeInfo>> logger): AbstractAnimeProvider<Episode, EpisodeInfo>(httpClientFactory, logger)
 {
   #region Fields
 
   private static readonly Regex DetectEpisodeNumber = new(@"\d+", RegexOptions.Compiled);
-
-  #endregion
-  
-  #region Constructor
-  
-  public MalEpisodeProvider(IHttpClientFactory httpClientFactory, ILogger<AbstractAnimeProvider<Episode, EpisodeInfo>> logger) : base(httpClientFactory, logger)
-  {
-  }
 
   #endregion
 
@@ -57,17 +49,25 @@ public class MalEpisodeProvider: AbstractAnimeProvider<Episode, EpisodeInfo>
         info.SeasonProviderIds[ProviderNames.MalProvider] = malId.ToString();
       }
 
-      AnimeEpisode? episode = await (JikanProvider.Instance?.GetAnimeEpisodeAsync(malId, idx, cancellationToken) ?? Task.FromResult<AnimeEpisode?>(null));
+      try
+      {
+        AnimeEpisode? episode = await (JikanProvider.Instance?.GetAnimeEpisodeAsync(malId, idx, cancellationToken) ?? Task.FromResult<AnimeEpisode?>(null));
+        result.Item.Name = episode?.Title ?? string.Empty;
+        result.Item.OriginalTitle = episode?.TitleRomanji ?? string.Empty;
+        result.Item.Overview = episode?.Synopsis ?? string.Empty;
+      }
+      catch
+      {
+        // ignore one of the many cases where this api just fails 
+      }
 
-      result.Item.Name = episode?.Title ?? string.Empty;
       // season number can be set to 1 as animes don't really have seasons in that sense.
       // so for the mal implementation every season has its own id
       result.Item.ParentIndexNumber = info.ParentIndexNumber;
-      result.Item.OriginalTitle = episode?.TitleRomanji ?? string.Empty;
-      result.Item.Overview = episode?.Synopsis ?? string.Empty;
       
       result.Item.IndexNumber = idx;
     }
+    result.Item.ParentIndexNumber = 1;
 
     return result;
   }
