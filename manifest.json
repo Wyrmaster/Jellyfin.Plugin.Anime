@@ -3,10 +3,17 @@
     "category": "Metadata",
     "guid": "597c0d6e-2e91-402d-be34-54b67c4a5da2",
     "name": "Anime Provider",
-    "description": "MetaData provider for Anime series and movies from AniList and MyAnimeList",
+    "description": "MetaData provider for Anime series and movies from AniList and Kitsu",
     "owner": "Stephen Pichler",
     "overview": "Anime Metadata Provider",
     "versions": [
+      {
+        "checksum": "8bbe4e9d120f9cb9f80fb2e0de0e13c0",
+        "sourceUrl": "https://github.com/Wyrmaster/Jellyfin.Plugin.Anime/releases/download/v1.0.5/Jellyfin.Plugin.Anime.v1.0.5.zip",
+        "targetAbi": "10.10.7",
+        "timestamp": "2026-08-30T14:14:15Z",
+        "version": "1.0.5"
+      },
       {
         "checksum": "3bd9675e6a72d1b169068e5495659761",
         "sourceUrl": "https://github.com/Wyrmaster/Jellyfin.Plugin.Anime/releases/download/v1.0.4/Jellyfin.Plugin.Anime.v1.0.4.zip",
