@@ -1,6 +1,5 @@
 ﻿using Jellyfin.Plugin.Anime.Configuration;
 using Jellyfin.Plugin.Anime.GraphQL;
-using Jellyfin.Plugin.Anime.MyAnimeList;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
@@ -20,7 +19,6 @@ public class Plugin
   public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer) : base(applicationPaths, xmlSerializer)
   {
     AniListProvider.Initialize(this.Configuration.AniListEndpoint);
-    JikanProvider.Initialize(this.Configuration.JikanEndpoint);
     this.ConfigurationChanged += this.HandleConfigurationChanged;
   }
 
@@ -64,7 +62,6 @@ public class Plugin
   private void HandleConfigurationChanged(object? sender, BasePluginConfiguration e)
   {
     AniListProvider.Initialize(this.Configuration.AniListEndpoint);
-    JikanProvider.Initialize(this.Configuration.JikanEndpoint);
   }
 
   #endregion

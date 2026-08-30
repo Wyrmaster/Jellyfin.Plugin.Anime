@@ -105,8 +105,8 @@ public abstract class AbstractBaseAnimeProvider<TItemType, TLookupInfoType>
   /// </summary>
   /// <param name="filePath"></param>
   /// <returns></returns>
-  protected long? TryReadMalIdFromFile(string filePath) =>
-    Regexes.MalIdRegex.Matches(filePath).LastOrDefault(entry => entry.Success) is not { } match
+  protected long? TryReadKitsuIdFromFile(string filePath) =>
+    Regexes.KitsuIdRegex.Matches(filePath).LastOrDefault(entry => entry.Success) is not { } match
     || !long.TryParse(match.Value, out long id)
       ? null
       : id;

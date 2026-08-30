@@ -43,6 +43,11 @@ public class Regexes
   ///   detect the MAL id in a string
   /// </summary>
   public static Regex MalIdRegex { get; } = new("(?<=\\[mal-?)\\d+(?=\\])",  RegexOptions.Compiled | RegexOptions.IgnoreCase);
+  
+  /// <summary>
+  ///   detect the Kitsu id in a string
+  /// </summary>
+  public static Regex KitsuIdRegex { get; } = new("(?<=\\[kitsu-?)\\d+(?=\\])",  RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
   #endregion
 }

@@ -16,6 +16,11 @@ public static class ProviderNames
   ///   Name of the Current Provider
   /// </summary>
   public const string MalProvider = "MalProvider";
+  
+  /// <summary>
+  ///   Name of the Current Provider
+  /// </summary>
+  public const string KitsuProvider = "KitsuProvider";
 
   #endregion
 }

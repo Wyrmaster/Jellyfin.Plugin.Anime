@@ -23,10 +23,5 @@ public class PluginConfiguration: BasePluginConfiguration
   /// </summary>
   public string AniListEndpoint { get; set; } = "https://graphql.anilist.co/";
 
-  /// <summary>
-  ///   Endpoint for the Jikan Endpoint
-  /// </summary>
-  public string JikanEndpoint { get; set; }
-
   #endregion
 }

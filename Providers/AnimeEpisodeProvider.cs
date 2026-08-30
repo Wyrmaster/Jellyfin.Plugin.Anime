@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
-using Jellyfin.Plugin.Anime.MyAnimeList;
-using JikanDotNet;
+using Jellyfin.Plugin.Anime.Dto;
+using Jellyfin.Plugin.Anime.Kitsu;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
@@ -33,33 +33,41 @@ public class MalEpisodeProvider(IHttpClientFactory httpClientFactory, ILogger<Ab
     Match? match = DetectEpisodeNumber.Matches(Path.GetFileNameWithoutExtension(info.Path)).LastOrDefault(entry => entry.Success);
     if (match != null && int.TryParse(match.Value, out int idx))
     {
-      long? malId;
-      if (info.SeasonProviderIds.TryGetValue(ProviderNames.MalProvider, out string? malIdString)
-          && long.TryParse(malIdString, out long malIdValue))
+      long? kitsuId;
+      if (info.SeasonProviderIds.TryGetValue(ProviderNames.KitsuProvider, out string? kitsuIdString)
+          && long.TryParse(kitsuIdString, out long kitsuIdValue))
       { 
-        malId = malIdValue;
+        kitsuId = kitsuIdValue;
       }
       else
       {
-        malId = this.TryReadMalIdFromFile(info.Path);
+        kitsuId = this.TryReadKitsuIdFromFile(info.Path);
       }
 
-      if (!info.SeasonProviderIds.ContainsKey(ProviderNames.MalProvider) && malId.HasValue)
+      if (!info.SeasonProviderIds.ContainsKey(ProviderNames.KitsuProvider) && kitsuId.HasValue)
       {
-        info.SeasonProviderIds[ProviderNames.MalProvider] = malId.ToString();
+        info.SeasonProviderIds[ProviderNames.KitsuProvider] = kitsuId.ToString();
       }
 
       try
       {
-        // todo find a way to make this work somehow this is causing trouble
-        // AnimeEpisode? episode = await (JikanProvider.Instance?.GetAnimeEpisodeAsync(malId, idx, cancellationToken) ?? Task.FromResult<AnimeEpisode?>(null));
-        // result.Item.Name = episode?.Title ?? string.Empty;
-        // result.Item.OriginalTitle = episode?.TitleRomanji ?? string.Empty;
-        // result.Item.Overview = episode?.Synopsis ?? string.Empty;
+        EpisodeData? episodeData = await KitsuProvider.Instance.GetEpisodeData
+        (
+          httpClientFactory.CreateClient($"Kitsu: {Path.GetFileNameWithoutExtension(info.Path)}"),
+          kitsuId!.Value,
+          idx,
+          logger,
+          cancellationToken
+        );
+        if (episodeData != null)
+        {
+          result.Item.Name = episodeData.Attributes.CanonicalTitle;
+          result.Item.Overview = episodeData.Attributes.Description ?? string.Empty;
+        }
       }
-      catch
+      catch(Exception e)
       {
-        // ignore one of the many cases where this api just fails 
+        this.Logger?.LogError(e.Message, e); 
       }
 
       // season number can be set to 1 as animes don't really have seasons in that sense.
