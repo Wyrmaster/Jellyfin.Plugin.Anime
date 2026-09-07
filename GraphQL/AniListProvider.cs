@@ -18,7 +18,7 @@ public class AniListProvider: IDisposable, IAsyncDisposable
 
   private AniListProvider(string endpoint)
   {
-    this._client = new GraphQlClient(endpoint);
+    this._client = GraphQlClient.GetInstance(endpoint);
     this._cache = new MemoryCache(new MemoryCacheOptions());
   }
 

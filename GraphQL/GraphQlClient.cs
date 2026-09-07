@@ -146,10 +146,22 @@ public class GraphQlClient : IDisposable, IAsyncDisposable
 
   #region Constructor
 
-  public GraphQlClient(string url, ILogger? logger =  null)
+  private GraphQlClient(string url, ILogger? logger =  null)
   {
     this._logger = logger;
     this._client = new GraphQLHttpClient(url, new SystemTextJsonSerializer());
+  }
+
+  #endregion
+
+  #region Properties
+
+  private static GraphQlClient _instance;
+  
+  public static GraphQlClient GetInstance(string url, ILogger? logger = null)
+  { 
+    _instance ??= new GraphQlClient(url, logger);
+    return _instance;
   }
 
   #endregion
@@ -158,13 +170,16 @@ public class GraphQlClient : IDisposable, IAsyncDisposable
 
   public async Task<AnimeRoot?> LoadAnimeAsync(long id, CancellationToken token = default)
   {
+    await this._semaphoreSlim.WaitAsync(token);
     GraphQLResponse<AnimeRoot?> response = await this._client.SendQueryAsync<AnimeRoot?>(GetAnimeGraphqlQuery, new Dictionary<string, string> { { "id", id.ToString() } }, cancellationToken: token);
 
     if (response is GraphQLHttpResponse<AnimeRoot?> httpResponse && httpResponse.StatusCode != HttpStatusCode.OK)
     {
+      this._semaphoreSlim.Release();
       this._logger?.LogError(string.Join(Environment.NewLine,response.Errors?.Select(entry => entry.Message) ?? ["An error occured"]));
       return null;
     }
+    this._semaphoreSlim.Release();
 
     return response.Data;
   }
@@ -172,20 +187,21 @@ public class GraphQlClient : IDisposable, IAsyncDisposable
   public async Task<QueryRoot?> QueryAnimeAsync(string query, CancellationToken token = default)
   {
     await this._semaphoreSlim.WaitAsync(token);
-    
     if (token.IsCancellationRequested)
     {
+      this._semaphoreSlim.Release();
       return null;
     }
     GraphQLResponse<QueryRoot?> response = await this._client.SendQueryAsync<QueryRoot?>(SearchAnimeGraphqlQuery, new Dictionary<string, string> { { "query", query } }, cancellationToken: token);
     
-    this._semaphoreSlim.Release();
     
     if (response is GraphQLHttpResponse<QueryRoot?> httpResponse && httpResponse.StatusCode != HttpStatusCode.OK)
     {
+      this._semaphoreSlim.Release();
       this._logger?.LogError(string.Join(Environment.NewLine,response.Errors?.Select(entry => entry.Message) ?? ["An error occured"]));
       return null;
     }
+    this._semaphoreSlim.Release();
 
     return response.Data;
   }

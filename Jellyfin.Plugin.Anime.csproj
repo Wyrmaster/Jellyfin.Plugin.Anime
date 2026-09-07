@@ -15,7 +15,6 @@
     <PackageReference Include="GraphQL.Client" Version="6.1.0" />
     <PackageReference Include="GraphQL.Client.Serializer.SystemTextJson" Version="6.1.0" />
     <PackageReference Include="Jellyfin.Controller" Version="10.10.7" />
-    <PackageReference Include="JikanDotNet" Version="2.9.1" />
     <PackageReference Include="System.Linq.Async" Version="6.0.3" />
   </ItemGroup>
 
