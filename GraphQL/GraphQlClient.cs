@@ -1,5 +1,5 @@
-﻿using System.Net;
 using GraphQL;
+using Jellyfin.Plugin.Anime.Common;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
@@ -16,7 +16,7 @@ public class GraphQlClient : IDisposable, IAsyncDisposable
 
   private readonly ILogger? _logger;
   private readonly GraphQLHttpClient _client;
-  private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
+  private readonly IRequestThrottle _throttle;
 
   private const string GetAnimeGraphqlQuery =
     """
@@ -146,62 +146,51 @@ public class GraphQlClient : IDisposable, IAsyncDisposable
 
   #region Constructor
 
-  private GraphQlClient(string url, ILogger? logger =  null)
+  public GraphQlClient(string url, IRequestThrottle throttle, ILogger? logger = null)
   {
     this._logger = logger;
+    this._throttle = throttle;
     this._client = new GraphQLHttpClient(url, new SystemTextJsonSerializer());
-  }
-
-  #endregion
-
-  #region Properties
-
-  private static GraphQlClient _instance;
-  
-  public static GraphQlClient GetInstance(string url, ILogger? logger = null)
-  { 
-    _instance ??= new GraphQlClient(url, logger);
-    return _instance;
   }
 
   #endregion
 
   #region Public Methods
 
-  public async Task<AnimeRoot?> LoadAnimeAsync(long id, CancellationToken token = default)
+  public Task<AnimeRoot?> LoadAnimeAsync(long id, CancellationToken token = default) =>
+    this.SendAsync<AnimeRoot>(GetAnimeGraphqlQuery, new { id }, token);
+
+  public Task<QueryRoot?> QueryAnimeAsync(string query, CancellationToken token = default) =>
+    this.SendAsync<QueryRoot>(SearchAnimeGraphqlQuery, new { query }, token);
+
+  #endregion
+
+  #region Private Methods
+
+  private Task<T?> SendAsync<T>(string query, object variables, CancellationToken token) where T : class =>
+    this._throttle.ExecuteAsync(() => this.SendOnceAsync<T>(query, variables, token), token);
+
+  private async Task<T?> SendOnceAsync<T>(string query, object variables, CancellationToken token) where T : class
   {
-    await this._semaphoreSlim.WaitAsync(token);
-    GraphQLResponse<AnimeRoot?> response = await this._client.SendQueryAsync<AnimeRoot?>(GetAnimeGraphqlQuery, new Dictionary<string, string> { { "id", id.ToString() } }, cancellationToken: token);
-
-    if (response is GraphQLHttpResponse<AnimeRoot?> httpResponse && httpResponse.StatusCode != HttpStatusCode.OK)
+    GraphQLResponse<T> response;
+    try
     {
-      this._semaphoreSlim.Release();
-      this._logger?.LogError(string.Join(Environment.NewLine,response.Errors?.Select(entry => entry.Message) ?? ["An error occured"]));
-      return null;
+      response = await this._client.SendQueryAsync<T>(query, variables, cancellationToken: token);
     }
-    this._semaphoreSlim.Release();
-
-    return response.Data;
-  }
-
-  public async Task<QueryRoot?> QueryAnimeAsync(string query, CancellationToken token = default)
-  {
-    await this._semaphoreSlim.WaitAsync(token);
-    if (token.IsCancellationRequested)
+    catch (GraphQLHttpRequestException e) when (RateLimitedException.IsBlockingStatus(e.StatusCode))
     {
-      this._semaphoreSlim.Release();
-      return null;
+      throw new RateLimitedException(RateLimitedException.ParseRetryAfter(e.ResponseHeaders), e);
     }
-    GraphQLResponse<QueryRoot?> response = await this._client.SendQueryAsync<QueryRoot?>(SearchAnimeGraphqlQuery, new Dictionary<string, string> { { "query", query } }, cancellationToken: token);
-    
-    
-    if (response is GraphQLHttpResponse<QueryRoot?> httpResponse && httpResponse.StatusCode != HttpStatusCode.OK)
+
+    if (response is GraphQLHttpResponse<T> httpResponse && RateLimitedException.IsBlockingStatus(httpResponse.StatusCode))
     {
-      this._semaphoreSlim.Release();
-      this._logger?.LogError(string.Join(Environment.NewLine,response.Errors?.Select(entry => entry.Message) ?? ["An error occured"]));
-      return null;
+      throw new RateLimitedException(RateLimitedException.ParseRetryAfter(httpResponse.ResponseHeaders));
     }
-    this._semaphoreSlim.Release();
+
+    if (response.Errors is { Length: > 0 })
+    {
+      this._logger?.LogError("AniList returned errors: {Errors}", string.Join(Environment.NewLine, response.Errors.Select(entry => entry.Message)));
+    }
 
     return response.Data;
   }
@@ -212,28 +201,14 @@ public class GraphQlClient : IDisposable, IAsyncDisposable
 
   public void Dispose()
   {
-    this.DisposeAsync().AsTask().Wait();
+    this._client.Dispose();
   }
 
-  public async ValueTask DisposeAsync()
+  public ValueTask DisposeAsync()
   {
-    await CastAndDispose(this._client);
-    await CastAndDispose(this._semaphoreSlim);
-
-    return;
-
-    static async ValueTask CastAndDispose(IDisposable resource)
-    {
-      if (resource is IAsyncDisposable resourceAsyncDisposable)
-      {
-        await resourceAsyncDisposable.DisposeAsync();
-      }
-      else
-      {
-        resource.Dispose();
-      }
-    }
+    this._client.Dispose();
+    return ValueTask.CompletedTask;
   }
-  
+
   #endregion
 }

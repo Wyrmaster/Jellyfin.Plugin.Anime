@@ -1,4 +1,6 @@
-﻿using Jellyfin.Plugin.Anime.GraphQL.Dto.QueryAnime;
+using System.Runtime.CompilerServices;
+using Jellyfin.Plugin.Anime.Common;
+using Jellyfin.Plugin.Anime.GraphQL.Dto.QueryAnime;
 using Microsoft.Extensions.Caching.Memory;
 using AnimeMedia = Jellyfin.Plugin.Anime.GraphQL.Dto.QueryAnime.Media;
 using QueryMedia = Jellyfin.Plugin.Anime.GraphQL.Dto.SearchAnime.Medium;
@@ -9,6 +11,16 @@ public class AniListProvider: IDisposable, IAsyncDisposable
 {
   #region Fields
 
+  private static readonly TimeSpan AnimeCacheDuration = TimeSpan.FromMinutes(30);
+  private static readonly TimeSpan NotFoundCacheDuration = TimeSpan.FromMinutes(5);
+  private static readonly TimeSpan SearchCacheDuration = TimeSpan.FromMinutes(10);
+
+  /// <summary>
+  ///   Shared between re-initializations so a cooldown survives a configuration change.
+  ///   AniList allows about 90 requests per minute (30 while degraded), so stay well below that.
+  /// </summary>
+  private static readonly IRequestThrottle Throttle = new RequestThrottle(TimeSpan.FromSeconds(1.5), TimeSpan.FromSeconds(90));
+
   private readonly GraphQlClient _client;
   private readonly IMemoryCache _cache;
 
@@ -18,7 +30,7 @@ public class AniListProvider: IDisposable, IAsyncDisposable
 
   private AniListProvider(string endpoint)
   {
-    this._client = GraphQlClient.GetInstance(endpoint);
+    this._client = new GraphQlClient(endpoint, Throttle);
     this._cache = new MemoryCache(new MemoryCacheOptions());
   }
 
@@ -53,16 +65,13 @@ public class AniListProvider: IDisposable, IAsyncDisposable
   /// <returns></returns>
   public async Task<AnimeMedia?> GetAnimeDataAsync(long id, CancellationToken token = default)
   {
-    if (!this._cache.TryGetValue(id, out Media? anime))
+    if (this._cache.TryGetValue(id, out Media? anime))
     {
-      anime = (await this._client.LoadAnimeAsync(id, token))?.Media;
-      if (anime == null)
-      {
-        return null;
-      }
-      
-      this._cache.Set(id, anime, TimeSpan.FromMinutes(30));
+      return anime;
     }
+
+    anime = (await this._client.LoadAnimeAsync(id, token))?.Media;
+    this._cache.Set(id, anime, anime == null ? NotFoundCacheDuration : AnimeCacheDuration);
 
     return anime;
   }
@@ -73,11 +82,18 @@ public class AniListProvider: IDisposable, IAsyncDisposable
   /// <param name="query">serach query</param>
   /// <param name="token"></param>
   /// <returns></returns>
-  public async IAsyncEnumerable<QueryMedia> SearchForAnimeAsync(string query, CancellationToken token = default)
+  public async IAsyncEnumerable<QueryMedia> SearchForAnimeAsync(string query, [EnumeratorCancellation] CancellationToken token = default)
   {
-    foreach (var pageMedium in (await this._client.QueryAnimeAsync(query, token))?.Page?.Media ?? [])
+    string key = $"search:{query.ToLowerInvariant()}";
+    if (!this._cache.TryGetValue(key, out List<QueryMedia>? results))
     {
-      yield return pageMedium;
+      results = (await this._client.QueryAnimeAsync(query, token))?.Page?.Media?.ToList() ?? [];
+      this._cache.Set(key, results, SearchCacheDuration);
+    }
+
+    foreach (QueryMedia medium in results!)
+    {
+      yield return medium;
     }
   }
 

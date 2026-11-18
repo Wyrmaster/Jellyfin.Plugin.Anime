@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Jellyfin.Plugin.Anime.Dto;
 using Jellyfin.Plugin.Anime.Kitsu;
 using MediaBrowser.Controller.Entities.TV;
@@ -51,10 +51,15 @@ public class MalEpisodeProvider(IHttpClientFactory httpClientFactory, ILogger<Ab
 
       try
       {
+        if (!kitsuId.HasValue)
+        {
+          throw new InvalidOperationException("No Kitsu id found for the episode");
+        }
+
         EpisodeData? episodeData = await KitsuProvider.Instance.GetEpisodeData
         (
           httpClientFactory.CreateClient($"Kitsu: {Path.GetFileNameWithoutExtension(info.Path)}"),
-          kitsuId!.Value,
+          kitsuId.Value,
           idx,
           logger,
           cancellationToken
@@ -67,7 +72,7 @@ public class MalEpisodeProvider(IHttpClientFactory httpClientFactory, ILogger<Ab
       }
       catch(Exception e)
       {
-        this.Logger?.LogError(e.Message, e); 
+        this.Logger?.LogWarning(e, "Could not resolve Kitsu episode data for {Path}", info.Path);
       }
 
       // season number can be set to 1 as animes don't really have seasons in that sense.

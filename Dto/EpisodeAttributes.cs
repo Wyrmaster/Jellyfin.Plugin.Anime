@@ -10,6 +10,9 @@ public class EpisodeAttributes
   [JsonPropertyName("synopsis")]
   public string? Description { get; set; }
   
+  [JsonPropertyName("number")]
+  public int? Number { get; set; }
+
   [JsonPropertyName("airdate")]
   public string? AirDate { get; set; }
 }
