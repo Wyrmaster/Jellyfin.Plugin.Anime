@@ -8,10 +8,10 @@
     "overview": "Anime Metadata Provider",
     "versions": [
       {
-        "checksum": "2aa69a01da5bd6c49b94c2dbf7a00461",
+        "checksum": "fe0eb934d3fb84b917a215f67a878fa8",
         "sourceUrl": "https://github.com/Wyrmaster/Jellyfin.Plugin.Anime/releases/download/v1.0.7/Jellyfin.Plugin.Anime.v1.0.7.zip",
         "targetAbi": "10.10.7",
-        "timestamp": "2026-11-18T08:56:51Z",
+        "timestamp": "2026-11-18T08:56:57Z",
         "version": "1.0.7"
       },
       {
